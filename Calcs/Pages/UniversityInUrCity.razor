@@ -1,0 +1,60 @@
+﻿@page "/random-dog-image"
+@using System.Net.Http
+@using System.Text.Json
+@inject HttpClient httpClient
+
+<h3>Случайное изображение собаки</h3>
+
+@if (isLoading)
+{
+    <p>Loading...</p>
+}
+else if (errorMessage != null)
+{
+    <p>@errorMessage</p>
+}
+else
+{
+    <div>
+        <img src="@dogImageUrl" alt="Random Dog Image" style="max-width: 400px;" />
+        <button class="btn btn-primary mt-3" @onclick="LoadNewImage">Сгенерировать новое фото</button>
+    </div>
+}
+
+@code {
+    private string dogImageUrl;
+    private bool isLoading = true;
+    private string errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadNewImage();
+    }
+
+    private async Task LoadNewImage()
+    {
+        isLoading = true;
+        try
+        {
+            var response = await httpClient.GetAsync("https://dog.ceo/api/breeds/image/random");
+            response.EnsureSuccessStatusCode();
+            var responseBody = await response.Content.ReadAsStringAsync();
+            var result = JsonSerializer.Deserialize<DogApiResponse>(responseBody);
+            dogImageUrl = result.message;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    public class DogApiResponse
+    {
+        public string message { get; set; }
+        public string status { get; set; }
+    }
+}
